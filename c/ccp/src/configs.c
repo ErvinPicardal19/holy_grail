@@ -20,14 +20,16 @@ void create_config(const char *project_dir, Config config)
     FILE       *file;
     const char *output;
     char type[64];
-    char        temp_file_holder[PATH_MAX];
-    memset(temp_file_holder, 0, PATH_MAX);
+    char temp[4096];
+    int len = 0;
+    char filepath[PATH_MAX];
+    memset(filepath, 0, PATH_MAX);
     memset(type, 0, 64);
-    strcat(temp_file_holder, project_dir);
+    memset(temp, 0, 4096);
+    strcat(filepath, project_dir);
     switch (config) {
         case MAKEFILE:
-            strcat(temp_file_holder, "/Makefile");
-            char temp[4096];
+            strcat(filepath, "/Makefile");
             memset(temp, 0, sizeof(temp));
             strcat(temp, "EXEC := ");
             strcat(temp, project_name);
@@ -37,17 +39,21 @@ void create_config(const char *project_dir, Config config)
             strcpy(type, "Makefile");
             break;
         case CLANG_FORMAT:
-            strcat(temp_file_holder, "/.clang-format");
+            strcat(filepath, "/.clang-format");
             output = clang_format_config;
             strcpy(type, ".clang-format");
             break;
         case CLANG_D:
-            strcat(temp_file_holder, "/.clangd");
-            output = clangd_config;
+            strcat(filepath, "/.clangd");
+            len = snprintf(temp + len, sizeof(temp) - len, 
+                           "CompileFlags:\n"
+                           "  Add: [-I%s/include]"
+                           , project_dir);
+            output = temp;
             strcpy(type, ".clangd");
             break;
         case CLANG_TIDY:
-            strcat(temp_file_holder, "/.clang-tidy");
+            strcat(filepath, "/.clang-tidy");
             output = clang_tidy_config;
             strcpy(type, ".clang-tidy");
             break;
@@ -57,10 +63,10 @@ void create_config(const char *project_dir, Config config)
             break;
     }
 
-    file = fopen(temp_file_holder, "w");
+    file = fopen(filepath, "w");
 
     if (file == NULL) {
-        fprintf(stderr, "Cannot create %s\n", temp_file_holder);
+        fprintf(stderr, "Cannot create %s\n", filepath);
         perror("fopen");
         exit(1);
     }
@@ -292,9 +298,6 @@ const char *clang_format_config =
 "UseTab:          Never\n"
 "...\n";
 
-const char *clangd_config =
-    "CompileFlags:\n"
-    "  Add: [-I/home/ervinpicardal/cpp_ws/sercomm_training/PRACTICE/ccp/include]";
 
 const char *clang_tidy_config =
     "---\n"

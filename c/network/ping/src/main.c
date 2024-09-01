@@ -13,7 +13,7 @@
 const char *dns_lookup(char *host_name, struct sockaddr_in* socket_info)
 {
     struct hostent *host_entity;
-    char *ip = (char *) malloc(sizeof(INET_ADDRSTRLEN));
+    char *ip = (char *) malloc(INET_ADDRSTRLEN * sizeof(char));
    
     
     host_entity = gethostbyname(host_name);
@@ -41,7 +41,6 @@ int main(int argc, char *argv[])
 {
     int sockfd;
     struct sockaddr_in sock_add;
-    char iif[INET_ADDRSTRLEN];
     if (argc != 2)
     {
         fprintf(stderr, "usage: %s <ip_address>\n", argv[0]);
