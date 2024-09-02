@@ -4,8 +4,13 @@
 #include <stdbool.h>
 
 #define sec2ms(s) (s * 1000)
+<<<<<<< HEAD
 #define sec2us(s) (s * 1000000L)
 #define sec2ns(s) (s * 1000000000L)
+=======
+#define sec2us(s) (s * 1000000LL)
+#define sec2ns(s) (s * 1000000000LL)
+>>>>>>> 70dba4cadc00b4ddbc4de248311405f136b369a5
 #define ns2ms(ns) (ns / 1000000)
 #define ns2us(ns) (ns / 1000)
 
