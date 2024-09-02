@@ -3,29 +3,23 @@
 #include <time.h>
 #include <unistd.h>
 
-unsigned long millis()
+millis_t millis()
 {
-    struct timespec tp;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
-    unsigned long ms =
-        (sec2ms((unsigned long)tp.tv_sec) + ns2ms((unsigned long)tp.tv_nsec));
-    return ms;
+    nanos_t ns = nanos();
+    return ns2ms(ns);
 }
 
-unsigned long micros()
+millis_t micros()
 {
-    struct timespec tp;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
-    long unsigned int us =
-        (sec2us((unsigned long)tp.tv_sec) + ns2us((unsigned long)tp.tv_nsec));
-    return us;
+    nanos_t ns = nanos();
+    return ns2us(ns);
 }
 
-unsigned long nanos()
+nanos_t nanos()
 {
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
-    long unsigned int ns = 
-        sec2ns((unsigned long)tp.tv_sec) + (unsigned long)tp.tv_nsec;
+    nanos_t ns = 
+        sec2ns((nanos_t)tp.tv_sec) + (nanos_t)tp.tv_nsec;
     return ns;
 }

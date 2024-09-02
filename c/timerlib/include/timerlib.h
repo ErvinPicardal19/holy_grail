@@ -4,13 +4,15 @@
 #include <stdbool.h>
 
 #define sec2ms(s) (s * 1000)
-#define sec2us(s) (s * 1000000LL)
-#define sec2ns(s) (s * 1000000000LL)
+#define sec2us(s) (s * 1000000L)
+#define sec2ns(s) (s * 1000000000L)
 #define ns2ms(ns) (ns / 1000000)
 #define ns2us(ns) (ns / 1000)
 
 typedef void (*callback_t)(void);
-typedef unsigned long millis_t;
+typedef double millis_t;
+typedef double micros_t;
+typedef unsigned long nanos_t;
 
 typedef struct
 {
@@ -19,8 +21,8 @@ typedef struct
     bool *stop;
 } IntervalInfo;
 
-unsigned long millis();
-unsigned long micros();
+double millis();
+double micros();
 unsigned long nanos();
 
 void *runCallback(void *arg);

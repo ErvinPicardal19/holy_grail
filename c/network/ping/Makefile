@@ -1,4 +1,4 @@
-EXEC := ping
+EXEC := ping2
 debug ?= 1
 
 # Directories
@@ -23,7 +23,7 @@ endif
 # Compiler and Linker Flags
 CC ?= gcc
 FLAGS := -Wall -Werror -pedantic
-LDFLAGS := -l$(EXEC)
+LDFLAGS := -l$(EXEC) -ltimerlib
 
 ifeq ($(CC), clang-18)
 	LINTER := clang-tidy-18
