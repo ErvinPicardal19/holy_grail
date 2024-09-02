@@ -55,9 +55,9 @@ int main(int argc, char *argv[])
     if ( (sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0 )
         err_n_die("Socket file descriptor not recieved");
     
-    // ping(sockfd, &sockDest, ip, domainName, reverseDomain);
-    printf("%s\n", ip);
-    printf("%s\n", reverseDomain);
+    ping(sockfd, &sockDest, ip, domainName, reverseDomain);
+    // printf("%s\n", ip);
+    // printf("%s\n", reverseDomain);
 
 
     free(ip);
@@ -100,8 +100,8 @@ void ping(int sockfd, struct sockaddr_in *sockDest, const char *ip, const char *
     socklen_t addr_len;
     
     struct timeval timeout;
-    double start, end;
-    double ping_start, ping_end;
+    long start, end;
+    long ping_start, ping_end;
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
 
@@ -112,7 +112,7 @@ void ping(int sockfd, struct sockaddr_in *sockDest, const char *ip, const char *
         err_n_die("Setting socket option recieve timeout failed.");
     
     ping_start = millis();
-    double temp;
+    long temp;
     while (ping_loop)
     {
         flag = 1;
@@ -133,9 +133,8 @@ void ping(int sockfd, struct sockaddr_in *sockDest, const char *ip, const char *
             printf("\nPacket Sending Failed.\n");
         }
         
-        while((temp = (millis() - start)) <= 999) {
-        }
-        printf("(millis() - start) = %f\n", temp);
+        while((temp = (millis() - start)) < 1000) {}
+        printf("(millis() - start) = %ld\n", temp);
 
         addr_len = sizeof(r_addr);
         if (recvfrom(sockfd, rbuffer, sizeof(rbuffer), 0, (struct sockaddr *) &r_addr, &addr_len) <= 0 && msg_count > 1) {
@@ -143,7 +142,7 @@ void ping(int sockfd, struct sockaddr_in *sockDest, const char *ip, const char *
         } else {
             end = millis();
 
-            double timeElapsed = end - start;
+            long timeElapsed = end - start;
 
             if (flag) {
 
@@ -151,7 +150,7 @@ void ping(int sockfd, struct sockaddr_in *sockDest, const char *ip, const char *
                 if (!(recv_hdr->type == ICMP_ECHOREPLY || recv_hdr->code == 0))
                     printf("Error... Packet recieved with ICMP type %d code %d\n", recv_hdr->type, recv_hdr->code);
                 else {
-                    printf("%ld bytes from %s (%s): icmp_seq=%d ttl=%d time=%.2lf\n", sizeof(packet), reverseDomain, ip, msg_count, ttl, timeElapsed);
+                    printf("%ld bytes from %s (%s): icmp_seq=%d ttl=%d time=%ld\n", sizeof(packet), reverseDomain, ip, msg_count, ttl, timeElapsed);
                 }
                 msg_recieve_count++;
             }
@@ -161,10 +160,10 @@ void ping(int sockfd, struct sockaddr_in *sockDest, const char *ip, const char *
 
     ping_end = millis();
 
-    double totalTimeElapsed = (double) ping_end - ping_start;
+    long totalTimeElapsed = ping_end - ping_start;
 
     printf("\n--- %s ping statistics ---\n", domainName);
-    printf("%d packets transmitted, %d received, %d%% packet loss, time %.2lfms", 
+    printf("%d packets transmitted, %d received, %d%% packet loss, time %ldms", 
            msg_count, msg_recieve_count, ((msg_count - msg_recieve_count) /  msg_count), totalTimeElapsed);
 }
 
