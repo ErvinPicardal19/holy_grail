@@ -9,5 +9,9 @@ int main(void)
 
     printf("This is a process in fex1.c!\nPID = %d\n", pid);
 
+    sleep(3);
+
+    printf("Done %d\n", pid);
+
     return 0;
 }
