@@ -100,8 +100,8 @@ void ping(int sockfd, struct sockaddr_in *sockDest, const char *ip, const char *
     socklen_t addr_len;
     
     struct timeval timeout;
-    long start, end;
-    long ping_start, ping_end;
+    millis_t start, end;
+    millis_t ping_start, ping_end;
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
 
@@ -112,16 +112,15 @@ void ping(int sockfd, struct sockaddr_in *sockDest, const char *ip, const char *
         err_n_die("Setting socket option recieve timeout failed.");
     
     ping_start = millis();
-    long temp;
     while (ping_loop)
     {
         flag = 1;
 
         memset(&hdr, 0, sizeof(hdr));
-        hdr.type = ICMP_ECHO;
+        hdr.type = ICMP_ECHO; // No need to use htons because it is just one byte
         hdr.un.echo.id = htons(getpid()); //setting the identifier of the request
         hdr.code = htons(0); // CODE FOR ECHO REQUEST
-        hdr.un.echo.sequence = msg_count++;
+        hdr.un.echo.sequence = htons(msg_count++);
         hdr.checksum = checksum(&hdr, sizeof(hdr));
         
         memcpy(packet, &hdr, sizeof(hdr));
@@ -141,14 +140,14 @@ void ping(int sockfd, struct sockaddr_in *sockDest, const char *ip, const char *
         } else {
             end = millis();
 
-            long timeElapsed = end - start;
+            millis_t timeElapsed = end - start;
 
             if (flag) {
                 struct icmphdr *recv_hdr = (struct icmphdr *) (rbuffer + sizeof(struct iphdr));
                 if (!(recv_hdr->type == ICMP_ECHOREPLY || recv_hdr->code == 0))
                     printf("Error... Packet recieved with ICMP type %d code %d\n", recv_hdr->type, recv_hdr->code);
                 else {
-                    printf("%ld bytes from %s (%s): icmp_seq=%d ttl=%d time=%ldms\n", sizeof(packet), reverseDomain, ip, msg_count, ttl, timeElapsed);
+                    printf("%ld bytes from %s (%s): icmp_seq=%d ttl=%d time=%.1lfms\n", sizeof(packet), reverseDomain, ip, msg_count, ttl, timeElapsed);
                 }
                 msg_recieve_count++;
             }
@@ -161,7 +160,7 @@ void ping(int sockfd, struct sockaddr_in *sockDest, const char *ip, const char *
     long totalTimeElapsed = ping_end - ping_start;
 
     printf("\n--- %s ping statistics ---\n", domainName);
-    printf("%d packets transmitted, %d received, %d%% packet loss, time %ldms", 
+    printf("%d packets transmitted, %d received, %d%% packet loss, time %ldms\n", 
            msg_count, msg_recieve_count, ((msg_count - msg_recieve_count) /  msg_count), totalTimeElapsed);
 }
 
