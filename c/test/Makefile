@@ -23,7 +23,7 @@ endif
 
 # Compiler and Linker Flags
 CC := gcc
-CFLAGS := -Wall -Werror -pedantic
+# CFLAGS := -Wall -Werror -pedantic
 LDFLAGS := -l$(EXEC)
 
 ifeq ($(CC), clang-18)

@@ -1,3 +1,5 @@
+#define DEBUG 1
+
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -110,10 +112,26 @@ int main(int argc, char *argv[])
         result = -1;
         goto clean; 
     }
-    netlink_print_ifname(ifname_list);
+
+    int nl_fd = netlink_socket_init(ifname_list);
+    if(nl_fd == -1)
+    {
+        ERR_LOG("netlink_socket_init failedi.");
+        result = -1;
+        goto clean;
+    }
+    
+    netlink_init_neighbor(AF_INET);
+
+#if DEBUG
+    // DEBUG_LOG("nl_fd: %d", nl_fd);
+    //netlink_print_ifname(ifname_list);
+    //netlink_print_ifindex();
+#endif
 
 clean:
     hostdb_free_hosts();
     netlink_free_ifname(ifname_list);
+    close(nl_fd);
     return result;
 }
