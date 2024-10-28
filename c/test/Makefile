@@ -11,6 +11,7 @@ INCLUDE_DIR := include
 # Project Filenames
 EXEC ?= test
 OBJS := $(patsubst %.c,%.o,$(wildcard ${SRC_DIR}/*.c))
+MAIN := main.o
 HEADERS := $(wildcard ${INCLUDE_DIR}/*.h)
 SO_FILE := lib$(EXEC).so
 
@@ -21,9 +22,9 @@ endif
 # Compiler Settings
 
 # Compiler and Linker Flags
-CC ?= gcc
-FLAGS := -Wall -Werror -pedantic
-LDFLAGS := -l$(EXEC) -ltimerlib
+CC := gcc
+CFLAGS := -Wall -Werror -pedantic
+LDFLAGS := -l$(EXEC)
 
 ifeq ($(CC), clang-18)
 	LINTER := clang-tidy-18
@@ -56,17 +57,27 @@ uninstall :
 	@echo "\n\033[32m$(EXEC) uninstalled.\033[0m"
 
 $(EXEC) : $(CLANG_PREPARE) dir link
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $(SRC_DIR)/main.c -L$(abspath $(LIB_DIR)) $(LDFLAGS) -I$(INCLUDE_DIR)
-	@echo "\n\033[33mRun command:\n\texport LD_LIBRARY_PATH=$(abspath $(LIB_DIR)):"'$$LD_LIBRARY_PATH'
-	@echo "\nOr add it to your .bashrc or .zshrc to make it available on bootup.\033[0m"
-	@echo "\n\033[32mDone.\033[0m"
+	@if [ -n "$(wildcard $(LIB_DIR)/*.so)" ]; then \
+		$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $(BUILD_DIR)/$(MAIN) -L$(abspath $(LIB_DIR)) $(LDFLAGS) -I$(INCLUDE_DIR); \
+		echo "$(BIN_DIR)/$@ created."; \
+		echo "\n\033[33mRun command:\n\texport LD_LIBRARY_PATH=$(abspath $(LIB_DIR)):"'$$LD_LIBRARY_PATH'; \
+		echo "\nOr add it to your .bashrc or .zshrc to make it available on bootup.\033[0m"; \
+		echo "\n\033[32mDone.\033[0m"; \
+	else \
+		$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $(BUILD_DIR)/$(MAIN); \
+		echo "$(BIN_DIR)/$@ created."; \
+	fi
 
 $(OBJS) : dir
 	$(CC) $(CFLAGS) -fpic -o "$(BUILD_DIR)/$(@F)" -c "$(*).c" -I$(INCLUDE_DIR)
+	@echo "$(BUILD_DIR)/$(@F) created."
 
 link : dir $(OBJS)
 	@if [ -z "$(OBJS)" ]; then echo $(ERROR_MESSAGE) ; exit 1; fi
-	$(CC) -shared -o $(LIB_DIR)/$(SO_FILE) $(BUILD_DIR)/*
+	@if [ -n "$(HEADERS)" ]; then \
+		$(CC) -shared -o $(LIB_DIR)/$(SO_FILE) $(filter-out $(BUILD_DIR)/$(MAIN), $(wildcard $(BUILD_DIR)/*.o)); \
+		echo "$(LIB_DIR)/$(SO_FILE) created."; \
+	fi
 
 format :
 	@if [ -n "$(HEADERS)" ]; then $(FORMATTER) -style=file -i $(SRC_DIR)/* $(INCLUDE_DIR)/*; fi

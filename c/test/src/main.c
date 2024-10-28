@@ -1,107 +1,119 @@
-
-#include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
-#include <string.h>
-#include <stdint.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/file.h>
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/ip_icmp.h>
+#include "ndp_hostdb.h"
+#include "ndp_netlink.h" 
+#include "ndp_debug.h"
 
-// Network Libraries
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/ip_icmp.h>
 
-// Custom Libraries
-#include <timerlib.h>
-
-#define PING_PACKET_SIZE 64
-
-struct ping_pckt {
-    struct icmphdr hdr;
-    char msg[PING_PACKET_SIZE - sizeof(struct icmphdr)];
-};
-
-void create_icmp_pckt(struct ping_pckt* ping_pckt, char *pckt, size_t pcktsize, int sequence);
-unsigned short calculate_checksum(void *pckt, size_t pckt_len);
-
-int main(void)
+int main(int argc, char *argv[])
 {
-    struct ping_pckt ping_pckt;
-    char pckt[PING_PACKET_SIZE];
-
-    create_icmp_pckt(&ping_pckt, pckt, PING_PACKET_SIZE, 0);
+    struct ifname_node *ifname_list = NULL, *temp, *head = NULL;
+    int lockfd, result = 0;
+    int d_flag = 0;
+    char c;
     
-    char bytes[32];
-    memset(bytes, 0, 32);
-    memset(bytes, 0x4500, 2);
-    strcat(bytes, 0x0073);
-    strcat(bytes, 0x0000);
-    strcat(bytes, 0x4000);
-    strcat(bytes, 0x4011);
-    strcat(bytes, 0x0000);
-    strcat(bytes, 0xc0a8);
-    strcat(bytes, 0x0001);
-    strcat(bytes, 0xc0a8);
-    strcat(bytes, 0x00c7);
-    strcat(bytes, 0x0035);
-    strcat(bytes, 0xe97c);
-    strcat(bytes, 0x005f);
-    strcat(bytes, 0x279f);
-    strcat(bytes, 0x1e4b);
-    strcat(bytes, 0x8180);
-    
+    while((c = getopt(argc, argv, "di:")) != -1)
+    {
+        switch(c)
+        {
 
-#ifdef DEBUG
-    struct icmphdr *hdr = (struct icmphdr *) pckt;
-    char *message = (char *) (pckt + sizeof(struct icmphdr));
-    printf("Type=%d\n", hdr->type);
-    printf("Code=%d\n", hdr->code);
-    printf("Echo ID=%d\n", ntohs(hdr->un.echo.id));
-    printf("Echo Sequence=%d\n", ntohs(hdr->un.echo.sequence));
-    printf("msg=%s\n", message);
-#endif
+            case 'i':
+                if(ifname_list)
+                {
+                    temp = NULL;
+                    temp = (struct ifname_node *) malloc(sizeof(struct ifname_node));
+                    if(temp == NULL)
+                    {
+                        ERR_LOG("could not get input: %s", strerror(errno));
+                        break;
+                    }
+                    temp->ifname = optarg;
+                    temp->next = NULL;
+                    ifname_list->next = temp;
+                    ifname_list = ifname_list->next;
+                    temp = NULL;
+                    break;
+                } 
+                else 
+                {
+                    temp = NULL;
+                    temp = (struct ifname_node *) malloc(sizeof(struct ifname_node));
+                    if(temp == NULL)
+                    {
+                        ERR_LOG("could not get input: %s", strerror(errno));
+                        break;
+                    }
+                    temp->ifname = optarg;
+                    temp->next = NULL;
+                    ifname_list = temp;
+                    head = temp;
+                    temp = NULL;
+                    break;
+                }
+            case 'd':
+                d_flag = 1;
+                break;
+            default:
+                break;
+        }
+        
+    }
 
-    return 0;
-}
+    if(ifname_list == NULL)
+    {
+        temp = NULL;
+        temp = (struct ifname_node *) malloc(sizeof(struct ifname_node));
+        if(temp == NULL)
+        {
+            ERR_LOG("could not get input: %s", strerror(errno));
+        }
+        temp->ifname = "br-lan";
+        temp->next = NULL;
+        ifname_list = temp;
+        head = temp;
+        temp = NULL;
+    }
+    else
+    {
+        ifname_list = head;
+    }
 
-unsigned short calculate_checksum(void *pckt, size_t pcktlen)
-{
-    unsigned short *twobyte = (unsigned short *) pckt;
-    unsigned int sum = 0;
-    unsigned short result;
 
-    for (int i = 0; i < (pcktlen/2); i++)
-        sum += *twobyte++;
-    
-    if ((pcktlen % 2) != 0)
-        sum += *(unsigned char*) twobyte;
+    lockfd = open("/tmp/sc_neighbored_lock", O_RDWR | O_CREAT, 0777);
+    if(lockfd < -1)
+    {
+        ERR_LOG("open/create lock file failed:\t%s", strerror(errno));
+        result = -1;
+        goto clean; 
+    }
+    if(flock(lockfd, LOCK_EX | LOCK_NB) < 0)
+    {
+        ERR_LOG("acquire lock failed:\t%s", strerror(errno));
+        result = -1;
+        goto clean;
+    }
 
-    sum = (sum >> 16) + (sum & 0xFFFF);
-    sum += (sum >> 16);
-    result = (~sum);
-}
+    if(d_flag && !daemon(0, 1))
+    {
+        DEBUG_LOG("Daemon Created!");
+    }
 
-void create_icmp_pckt(struct ping_pckt* pingpckt, char *pckt, size_t pcktsize, int sequence)
-{
-    memset(pingpckt, 0, pcktsize);
-    memset(pckt, 0, pcktsize);
-    
-    pingpckt->hdr.type = ICMP_ECHO;
-    pingpckt->hdr.code = 0;
-    pingpckt->hdr.un.echo.id = htons(getpid());
-    pingpckt->hdr.un.echo.sequence = htons(sequence);
+    if(hostdb_init() == -1)
+    {
+        ERR_LOG("hostdb_init failed");
+        hostdb_free_hosts();
+        result = -1;
+        goto clean; 
+    }
+    netlink_print_ifname(ifname_list);
 
-    strcpy(pingpckt->msg, "Hello World!");
-    
-    pingpckt->hdr.checksum = 0;
-    // ping_pckt->hdr.checksum = calculate_checksum(&ping_pckt, PING_PACKET_SIZE);
-    
-    memcpy(pckt, pingpckt, pcktsize);
+clean:
+    hostdb_free_hosts();
+    netlink_free_ifname(ifname_list);
+    return result;
 }
