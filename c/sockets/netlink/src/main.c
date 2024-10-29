@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <errno.h>
 #include <linux/neighbour.h>
 #include <linux/netlink.h>
@@ -22,20 +23,26 @@ struct notify_neigh_request
 
 void handle_msg(struct notify_neigh_request *nhr, unsigned long len)
 {
-    struct nlmsghdr *nlm_hdr = (struct nlmsghdr *)nhr;
+    struct nlmsghdr *nlm_hdr = (struct nlmsghdr *) nhr;
     struct ndmsg *msg = (struct ndmsg *)(((char *)nhr) + sizeof(struct nlmsghdr));
     uint8_t l3addr[4];
     unsigned l3addr_len;
     uint8_t l2addr[6];
     char l2addr_len;
 
+    hexdump(nlm_hdr, sizeof(struct nlmsghdr));
+    hexdump(msg, sizeof(struct ndmsg));
+
+    DEBUG_LOG("STATE: %d", msg->ndm_state);
+
+#if 0
+    DEBUG_LOG("HERE!");
     switch (msg->ndm_state) {
     case NUD_REACHABLE: DEBUG_LOG("NUD_REACHABLE"); break;
     case NUD_STALE: DEBUG_LOG("NUD_STALE"); break;
     case NUD_FAILED: DEBUG_LOG("NUD_FAILED"); break;
     default: return;
     }
-
     if (msg->ndm_type != RTN_UNICAST) return;
 
     unsigned long rtattr_len =
@@ -64,10 +71,20 @@ void handle_msg(struct notify_neigh_request *nhr, unsigned long len)
 
     DEBUG_LOG("L2: %02x:%02x:%02x:%02x:%02x:%02x", l2addr[0], l2addr[1], l2addr[2],
               l2addr[3], l2addr[4], l2addr[5]);
+#endif
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
+    int ret = 0;
+
+    if(argc < 2)
+    {
+        fprintf(stderr, "usage: %s <interface>\n", argv[0]);
+        ret = -1;
+        goto EXIT;
+    }
+
     struct notify_neigh_request nhr;
     struct sockaddr_nl sa;
     char buf[8192];
@@ -76,6 +93,7 @@ int main(void)
     nl_fd = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
     if (nl_fd == -1) {
         ERROR_LOG("Create netlink socket failed: %s", strerror(errno));
+        ret = -1;
         goto EXIT;
     }
 
@@ -84,6 +102,7 @@ int main(void)
     sa.nl_groups = RTMGRP_NEIGH;
     if (bind(nl_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
         ERROR_LOG("Cannot bind netlink socket: %s", strerror(errno));
+        ret = -1;
         goto EXIT;
     }
 
@@ -98,33 +117,40 @@ int main(void)
     int wr_bytes = write(nl_fd, &nhr, sizeof(nhr));
     if (wr_bytes <= 0) {
         ERROR_LOG("Send RTM_GETNEIGH request failed: %s", strerror(errno));
+        ret = -1;
         goto EXIT;
     }
 
     memset(buf, 0, sizeof(buf));
-    ssize_t len = read(nl_fd, buf, sizeof(buf));
+    unsigned long len = read(nl_fd, buf, sizeof(buf));
     if (len < sizeof(struct nlmsghdr)) {
         ERROR_LOG("Reply from RTM_GETNEIGH request is too small");
+        ret = -1;
         goto EXIT;
     }
 
-    // hexdump(buf, sizeof(len));
+    hexdump(buf, sizeof(len));
 
     struct nlmsghdr *nlm = (struct nlmsghdr *)buf;
     if (!NLMSG_OK(nlm, len)) {
         DEBUG_LOG("NLMSG header is malformed");
+        ret = -1;
         goto EXIT;
     }
+    printf("\n");
 
     switch (nlm->nlmsg_type) {
     case NLMSG_DONE: break;
     case NLMSG_ERROR: ERROR_LOG("Error on returned NLMSG type"); break;
     case RTM_NEWNEIGH:
-    case RTM_DELNEIGH: handle_msg((struct notify_neigh_request *)nlm, len); break;
+    case RTM_DELNEIGH: 
+        handle_msg((struct notify_neigh_request *)nlm, len); 
+        break;
     default: break;
     }
 
 EXIT:
     if (nl_fd > 0) close(nl_fd);
-    return 0;
+    return ret;
+
 }
