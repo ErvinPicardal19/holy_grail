@@ -1,137 +1,72 @@
 #define DEBUG 1
 
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <fcntl.h>
+#include <getopt.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <sys/file.h>
 
-#include "ndp_hostdb.h"
-#include "ndp_netlink.h" 
+#include "ndp_netlink.h"
 #include "ndp_debug.h"
 
 
 int main(int argc, char *argv[])
 {
-    struct ifname_node *ifname_list = NULL, *temp, *head = NULL;
-    int lockfd, result = 0;
-    int d_flag = 0;
-    char c;
-    
-    while((c = getopt(argc, argv, "di:")) != -1)
-    {
-        switch(c)
-        {
+    struct ifname_node *ifname_list;
+    int lockfd, ret = 0;
+    char opt, d_flag = 0;
+    int n;
 
+
+    while((opt = getopt(argc, argv, "di:")) > 0)
+    {
+        switch(opt)
+        {
             case 'i':
-                if(ifname_list)
+                if(netlink_add_ifname(optarg) == -1)
                 {
-                    temp = NULL;
-                    temp = (struct ifname_node *) malloc(sizeof(struct ifname_node));
-                    if(temp == NULL)
-                    {
-                        ERR_LOG("could not get input: %s", strerror(errno));
-                        break;
-                    }
-                    temp->ifname = optarg;
-                    temp->next = NULL;
-                    ifname_list->next = temp;
-                    ifname_list = ifname_list->next;
-                    temp = NULL;
-                    break;
-                } 
-                else 
-                {
-                    temp = NULL;
-                    temp = (struct ifname_node *) malloc(sizeof(struct ifname_node));
-                    if(temp == NULL)
-                    {
-                        ERR_LOG("could not get input: %s", strerror(errno));
-                        break;
-                    }
-                    temp->ifname = optarg;
-                    temp->next = NULL;
-                    ifname_list = temp;
-                    head = temp;
-                    temp = NULL;
-                    break;
+                    ret = -1;
+                    goto EXIT;
                 }
+            break;
             case 'd':
                 d_flag = 1;
-                break;
             default:
-                break;
+            break;
         }
-        
     }
 
-    if(ifname_list == NULL)
-    {
-        temp = NULL;
-        temp = (struct ifname_node *) malloc(sizeof(struct ifname_node));
-        if(temp == NULL)
-        {
-            ERR_LOG("could not get input: %s", strerror(errno));
-        }
-        temp->ifname = "br-lan";
-        temp->next = NULL;
-        ifname_list = temp;
-        head = temp;
-        temp = NULL;
-    }
-    else
-    {
-        ifname_list = head;
-    }
+    if(argc == 1 && netlink_add_ifname("br-lan") == -1)
+        goto EXIT; 
 
-
-    lockfd = open("/tmp/sc_neighbored_lock", O_RDWR | O_CREAT, 0777);
-    if(lockfd < -1)
-    {
-        ERR_LOG("open/create lock file failed:\t%s", strerror(errno));
-        result = -1;
-        goto clean; 
-    }
-    if(flock(lockfd, LOCK_EX | LOCK_NB) < 0)
-    {
-        ERR_LOG("acquire lock failed:\t%s", strerror(errno));
-        result = -1;
-        goto clean;
-    }
-
-    if(d_flag && !daemon(0, 1))
-    {
-        DEBUG_LOG("Daemon Created!");
-    }
-
-    if(hostdb_init() == -1)
-    {
-        ERR_LOG("hostdb_init failed");
-        hostdb_free_hosts();
-        result = -1;
-        goto clean; 
-    }
-
-    int nl_fd = netlink_socket_init(ifname_list);
-    if(nl_fd == -1)
-    {
-        ERR_LOG("netlink_socket_init failedi.");
-        result = -1;
-        goto clean;
-    }
-    
-    netlink_init_neighbor(AF_INET);
+    netlink_get_ifname_list(&ifname_list);
 
 #if DEBUG
-    // DEBUG_LOG("nl_fd: %d", nl_fd);
-    //netlink_print_ifname(ifname_list);
-    //netlink_print_ifindex();
+    print_ifname_list(ifname_list); 
 #endif
 
-clean:
-    hostdb_free_hosts();
-    netlink_free_ifname(ifname_list);
-    close(nl_fd);
-    return result;
+    lockfd = open("/tmp/ndp_lock", O_RDWR | O_CREAT, 0777);
+    if(lockfd == -1)
+    {
+        ERR_LOG("create ndp_lock failed: %s", strerror(errno));
+        ret = -1;
+        goto EXIT;
+    }
+    if(flock(lockfd, LOCK_EX | LOCK_NB))
+    {
+        ERR_LOG("acquire lock failed: %s", strerror(errno));
+        ret = -1;
+        goto EXIT;
+    }
+
+     
+
+EXIT:
+    if(ifname_list)
+        free_ifname_list(ifname_list);
+    DEBUG_LOG("Exiting...");
+    return ret;
 }
