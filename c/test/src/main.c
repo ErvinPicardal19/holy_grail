@@ -43,7 +43,6 @@ int main(int argc, char *argv[])
         goto EXIT; 
 
     netlink_get_ifname_list(&ifname_list);
-
 #if DEBUG
     print_ifname_list(ifname_list); 
 #endif
@@ -62,11 +61,14 @@ int main(int argc, char *argv[])
         goto EXIT;
     }
 
-     
+    netlink_socket_init(ifname_list);
+    
+    DEBUG_LOG("ifname_list: %p\n", ifname_list);
 
 EXIT:
     if(ifname_list)
         free_ifname_list(ifname_list);
+    netlink_socket_exit();
     DEBUG_LOG("Exiting...");
     return ret;
 }

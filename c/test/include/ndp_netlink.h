@@ -12,6 +12,8 @@ struct ifname_node
 //
 // }
 
+int netlink_socket_init(struct ifname_node *list);
+void netlink_socket_exit(void);
 
 /*
  * ifname_node utilities
