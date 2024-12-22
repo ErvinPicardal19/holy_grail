@@ -6,6 +6,12 @@
 
 #include "configs.h"
 
+#define SHOW_USAGE() fprintf(stdout, "Create a C Project Directory.\n\n" \
+                                     "usage: %s [<options>] <project_name>\n\n" \
+                                     "-h\t\t- Show help.\n" \
+                                     "-L\t\t- Will turn on MAKE_SHARED_LIBRARY on Makefile.\n" \
+                                     "-v\t\t- Show version.\n", argv[0])
+
 const char *dog_ascii =
 "                                      &&&,%/&&&&&&                              \n"
 "                             %&&&%/#,,,,,,,,,,,%&&&%                            \n"
@@ -48,19 +54,36 @@ const char *dog_ascii =
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2) {
-        fprintf(stderr, "usage: %s <project_name>\n", argv[0]);
+    if (argc <= 1) 
+    {
+        SHOW_USAGE();
         exit(1);
     }
-    set_project_name(argv[1]);
+    
+    while((option = getopt(argc, argv, "hLv")) != -1)
+    {
+        switch(option)
+        {
+            case 'h':
+                SHOW_USAGE();
+            case 'v':
+                fprintf(stdout, "v1.0\n");
+                return 0;
+            case 'L':
+                set_shared_lib();
+            break;
+        }
+    }
+
+    set_project_name(argv[optind]);
     char project_dir[PATH_MAX];
     if (getcwd(project_dir, sizeof(project_dir)) == NULL) {
         fprintf(stderr, "Cannot access current directory.");
         exit(1);
     }
     strcat(project_dir, "/");
-    strcat(project_dir, argv[1]);
-
+    strcat(project_dir, argv[optind]);
+optopt
     create_project_dir(project_dir);
 
     create_config(project_dir, MAKEFILE);
@@ -71,7 +94,7 @@ int main(int argc, char *argv[])
     printf(
         "\033[32mProject %s created.\n"
         "%s\033[0m\n",
-        argv[1], dog_ascii
+        argv[optind], dog_ascii
     );
 
     return 0;
