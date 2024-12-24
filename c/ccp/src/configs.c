@@ -1,4 +1,5 @@
 #include "configs.h"
+#include "template.h"
 
 #include <linux/limits.h>
 #include <stdio.h>
@@ -92,23 +93,32 @@ void create_project_dir(char *project_dir)
     FILE *file;
     char  src_dir[PATH_MAX];
     char  include_dir[PATH_MAX];
+    char  lib_dir[PATH_MAX];
     memset(src_dir, 0, PATH_MAX);
     memset(include_dir, 0, PATH_MAX);
 
     strcat(src_dir, project_dir);
     strcat(include_dir, project_dir);
+    strcat(lib_dir, project_dir);
     strcat(src_dir, "/src/");
     strcat(include_dir, "/include");
+    strcat(lib_dir, "/lib");
 
-    if ((mkdir(project_dir, S_IRWXU | S_IRWXG)) == -1 ||
-        (mkdir(src_dir, S_IRWXU | S_IRWXG)) == -1 ||
-        (mkdir(include_dir, S_IRWXU | S_IRWXG)) == -1) {
+    if ((mkdir(project_dir, S_IRWXU | S_IRWXG)) == -1   ||
+        (mkdir(src_dir, S_IRWXU | S_IRWXG)) == -1       ||
+        (mkdir(include_dir, S_IRWXU | S_IRWXG)) == -1   ||
+        (mkdir(lib_dir, S_IRWXU | S_IRWXG)) == -1) 
+    {
         fprintf(stderr, "Cannot create project directory.\n");
         perror("mkdir: ");
         exit(1);
     }
 
+    if(is_shared_lib)
+        return;
+
     strcat(src_dir, project_name);
+    strcat(src_dir, ".c");
     file = fopen(src_dir, "w");
 
     if (file == NULL) {
@@ -121,3 +131,4 @@ void create_project_dir(char *project_dir)
 
     fclose(file);
 }
+
