@@ -39,9 +39,9 @@ void del_entry(struct list_head *pos)
 
 void get_head_info(struct list_head *head)
 {
-    printf("head address: %p\n", head);
-    printf("next pointer: %p\n", head->next);
-    printf("prev pointer: %p\n\n", head->prev);
+    printf("head address: %p\n", (void *)head);
+    printf("next pointer: %p\n", (void *)head->next);
+    printf("prev pointer: %p\n\n", (void *)head->prev);
 }
 
 #define list_for_each(pos, head) \
