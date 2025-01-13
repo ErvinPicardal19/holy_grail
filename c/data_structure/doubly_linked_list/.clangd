@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: [-I/home/ervinpicardal/holy_grail/c/data_structure/doubly_linked_list/include]
