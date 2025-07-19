@@ -1,30 +1,25 @@
 EXEC := test
-debug ?= 1
+MAKE_SHARED_LIBRARY := 0
+EXEC ?= test
+MAKE_SHARED_LIBRARY ?= 0
+DEBUG ?= 1
 
-# Directories
+# Project Dirs
 LIB_DIR := lib
 BIN_DIR := bin
 BUILD_DIR := build
 SRC_DIR := src
 INCLUDE_DIR := include
 
-# Project Filenames
-EXEC ?= test
-OBJS := $(patsubst %.c,%.o,$(wildcard ${SRC_DIR}/*.c))
-MAIN := main.o
-HEADERS := $(wildcard ${INCLUDE_DIR}/*.h)
-SO_FILE := lib$(EXEC).so
+# Files
+MAIN := ${EXEC}.o
+SRC := $(wildcard ${SRC_DIR}/*.c)
+OBJS := $(patsubst ${SRC_DIR}/%.c,${BUILD_DIR}/%.o,${SRC}) 
 
-ifeq ($(strip $(OBJS)),)
-	ERROR_MESSAGE := "No source file to compile"
-endif
-
-# Compiler Settings
-
-# Compiler and Linker Flags
-CC := gcc
-# CFLAGS := -Wall -Werror -pedantic
-LDFLAGS := -l$(EXEC)
+# Flags
+CC ?= gcc
+CFLAGS ?= -Wall
+LDFLAGS +=
 
 ifeq ($(CC), clang-18)
 	LINTER := clang-tidy-18
@@ -32,62 +27,55 @@ ifeq ($(CC), clang-18)
 	CLANG_PREPARE := format lint
 endif
 
-# Optimization Flags
-ifeq ($(debug), 1)
-	CFLAGS := $(CFLAGS) -g -O0
+ifeq ($(DEBUG), 1)
+	CFLAGS += -g -O0
 else
-	CFLAGS := $(CFLAGS) -g -Os
+	CFLAGS += -g -Os
+endif
+
+ifeq (${MAKE_SHARED_LIBRARY}, 1)
+	CFLAGS += -fPIC
+	TARGET := ${BIN_DIR}/lib${EXEC}.so
+	BIN_INSTALL_PATH := /usr/local/lib
+else
+	TARGET := ${BIN_DIR}/${EXEC}
+	BIN_INSTALL_PATH := /usr/local/bin
 endif
 
 # Entry
-all : $(EXEC)
+all : dir ${TARGET}
 
-# Install executable for whole system
-install : $(CLANG_PREPARE) dir link
-	cp $(abspath $(LIB_DIR)/$(SO_FILE)) /usr/local/lib
-	chmod 0755 /usr/local/lib/$(SO_FILE)
+install : dir ${TARGET}
+	@cp -v $(abspath ${TARGET}) ${BIN_INSTALL_PATH}
+	@mkdir -pv /usr/local/include/${EXEC}
+	@if [ -n "$(wildcard ${INCLUDE_DIR}/*.h)" ]; then \
+		cp -v ${INCLUDE_DIR}/* /usr/local/include/; \
+	fi
+	chmod 755 ${BIN_INSTALL_PATH}/$(notdir ${TARGET})
 	ldconfig
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/$(EXEC) $(SRC_DIR)/main.c $(LDFLAGS) -I$(INCLUDE_DIR)
-	cp $(abspath $(BIN_DIR)/$(EXEC)) /usr/local/bin
 	@echo "\n\033[32mDone.\033[0m"
 
 uninstall :
-	rm -rf /usr/local/lib/$(SO_FILE) /usr/local/bin/$(EXEC)
+	@rm -rvf ${BIN_INSTALL_PATH}/$(notdir ${TARGET})
+	@rm -rvf /usr/local/include/${EXEC}
 	ldconfig
-	@echo "\n\033[32m$(EXEC) uninstalled.\033[0m"
+	@echo "\n\033[32mDone.\033[0m"
 
-$(EXEC) : $(CLANG_PREPARE) dir link
-	@if [ -n "$(wildcard $(LIB_DIR)/*.so)" ]; then \
-		$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $(BUILD_DIR)/$(MAIN) -L$(abspath $(LIB_DIR)) $(LDFLAGS) -I$(INCLUDE_DIR); \
-		echo "$(BIN_DIR)/$@ created."; \
+${BIN_DIR}/${EXEC} : ${OBJS}
+	${CC} -o $@ ${OBJS} -L${LIB_DIR}/ ${LDFLAGS}
+	@echo "\n\033[32mDone.\033[0m"
+	@if [ -n "${LDFLAGS}" ]; then \
 		echo "\n\033[33mRun command:\n\texport LD_LIBRARY_PATH=$(abspath $(LIB_DIR)):"'$$LD_LIBRARY_PATH'; \
-		echo "\nOr add it to your .bashrc or .zshrc to make it available on bootup.\033[0m"; \
-		echo "\n\033[32mDone.\033[0m"; \
-	else \
-		$(CC) $(CFLAGS) -o $(BIN_DIR)/$@ $(BUILD_DIR)/$(MAIN); \
-		echo "$(BIN_DIR)/$@ created."; \
+		echo "\nAdd it to your .bashrc or .zshrc to make it available on bootup.\033[0m"; \
 	fi
+${BIN_DIR}/lib${EXEC}.so : ${OBJS}
+	${CC} -shared -o $@ ${OBJS} -L${LIB_DIR}/ ${LDFLAGS}
 
-$(OBJS) : dir
-	$(CC) $(CFLAGS) -fpic -o "$(BUILD_DIR)/$(@F)" -c "$(*).c" -I$(INCLUDE_DIR)
-	@echo "$(BUILD_DIR)/$(@F) created."
-
-link : dir $(OBJS)
-	@if [ -z "$(OBJS)" ]; then echo $(ERROR_MESSAGE) ; exit 1; fi
-	@if [ -n "$(HEADERS)" ]; then \
-		$(CC) -shared -o $(LIB_DIR)/$(SO_FILE) $(filter-out $(BUILD_DIR)/$(MAIN), $(wildcard $(BUILD_DIR)/*.o)); \
-		echo "$(LIB_DIR)/$(SO_FILE) created."; \
-	fi
-
-format :
-	@if [ -n "$(HEADERS)" ]; then $(FORMATTER) -style=file -i $(SRC_DIR)/* $(INCLUDE_DIR)/*; fi
-
-lint :
-	@if [ -n "$(HEADERS)" ]; then $(LINTER) $(SRC_DIR)/*.c -- -I$(INCLUDE_DIR) $(CFLAGS); fi
+${BUILD_DIR}/%.o : ${SRC_DIR}/%.c
+	${CC} ${CFLAGS} -o $@ -c $^ -I${INCLUDE_DIR}
 
 dir :
-	mkdir -p $(BUILD_DIR) $(BIN_DIR) $(LIB_DIR)
+	@mkdir -pv ${BIN_DIR} ${BUILD_DIR}
 
 clean :
-	rm -rf $(BUILD_DIR) $(BIN_DIR) $(LIB_DIR)
-
+	@rm -rvf ${BIN_DIR} ${BUILD_DIR}

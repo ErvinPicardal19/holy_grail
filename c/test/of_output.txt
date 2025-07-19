@@ -1,0 +1,48 @@
+Local Device: 02:C0:02:22:44:66 Mariner2 Controller profile: 6 profile_runing: 2
+	<Interface: 00:C0:02:22:44:66 (Ethernet)> 
+		Non1905 neighbor mac: 20:7B:D2:A3:C0:77
+	<Interface: 02:78:02:22:44:68 (Wireless)> band: 5G(2) channel: 36 bandwidth: 16 tx_power:0 Configured(1) bss_configured_num(0)
+		Bss: 02:78:02:22:44:68 ssid: NSD3K-4466-5 auth_mode: wpa2-psk(0x0020) encryption_mode: aes(0x0008) key: 1234567890123 mlo_enabled:1 mld_unit: 0 mld_link: 0 map_role: Fronthaul
+		Bss: 02:78:02:21:44:68 ssid: NSD3K-4466-BH auth_mode: wpa3-psk-mixed(0x0060) encryption_mode: aes(0x0008) key: 1234567890123 mlo_enabled:1 mld_unit: 1 mld_link: 0 map_role: Backhaul
+	<Interface: 02:67:02:22:44:67 (Wireless)> band: 2.4G(1) channel: 3 bandwidth: 4 tx_power:0 Configured(1) bss_configured_num(0)
+		Bss: 02:67:02:22:44:67 ssid: NSD3K-4466-5 auth_mode: wpa2-psk(0x0020) encryption_mode: aes(0x0008) key: 1234567890123 mlo_enabled:1 mld_unit: 0 mld_link: 1 map_role: Fronthaul
+<Cfg: >
+	2.4G steer policy: [policy = 0] [channel_util = 0] [rcpi_threshold = 0]
+	5G steer policy: [policy = 0] [channel_util = 0] [rcpi_threshold = 0]
+	AP metric interval:5
+
+Device: 02:78:02:22:44:68 Agent profile: 4 lastRxTime: 1682716150
+	<Interface: 00:C0:02:22:44:66 (Ethernet)> 
+	<Interface: 02:78:02:22:44:68 (Wireless)> band: 5G(2) channel: 36 bandwidth: 16 tx_power:0 Configured(1) bss_configured_num(2)
+		Bss: 02:78:02:22:44:68 ssid: NSD3K-4466-5 auth_mode: (0x0000) encryption_mode: (0x0000) key:  mlo_enabled:0 map_role: Fronthaul
+		Bss: 02:78:02:21:44:68 ssid: NSD3K-4466-BH auth_mode: (0x0000) encryption_mode: (0x0000) key:  mlo_enabled:0 map_role: Backhaul
+			Client: D8:21:DA:77:4D:1A
+				Traffic stats(update time: 1682716145): txBytes=4499456 rxBytes=10517504 txPackets=74772 rxPackets=79475 txPacketError=88 rxPacketError=0 retransmission=0
+				Link metric(update time: 1682716145): rxRate=229 txRate=270 uplinkRcpi=98
+	<Interface: 02:78:02:21:44:68 (Wireless)> band: 5G(2) channel: 0 bandwidth: 0 tx_power:0 No need to config(2) bss_configured_num(0)
+		Neighbor al mac: DA:21:DA:77:4D:18, Neighbor interface mac: D8:21:DA:77:4D:1A
+			Link metric(update time: 1682716149): txPacketErrors=88 txPackets=74779 macThroughPutCapacity=270 linkAvailability=70 phyRate=229 rxPackets=79477 rxPacketErrors=0 rcpi=98
+	<Interface: 02:67:02:22:44:67 (Wireless)> band: 2.4G(1) channel: 3 bandwidth: 4 tx_power:0 Configured(1) bss_configured_num(1)
+		Bss: 02:67:02:22:44:67 ssid: NSD3K-4466-5 auth_mode: (0x0000) encryption_mode: (0x0000) key:  mlo_enabled:0 map_role: Fronthaul
+	<Route: media_type: Eth mac: 00:00:00:00:00:00 ifname: lo update_time: 1682716150>
+
+Device: DA:21:DA:77:4D:18 Agent profile: 2 lastRxTime: 1682716149
+	<Interface: D8:21:DA:77:4D:1A (Wireless)> band: 5G(2) channel: 0 bandwidth: 0 tx_power:0 Configured(1) bss_configured_num(2)
+		Bss: D8:21:DA:77:4D:1E ssid: NSD3K-4466-BH auth_mode: (0x0000) encryption_mode: (0x0000) key:  mlo_enabled:0 map_role: Backhaul
+		Bss: D8:21:DA:77:4D:1C ssid: NSD3K-4466-5 auth_mode: (0x0000) encryption_mode: (0x0000) key:  mlo_enabled:0 map_role: Fronthaul
+			Client: F0:EE:7A:A6:AE:D7
+				Traffic stats(update time: 1682716149): txBytes=5632000 rxBytes=9216 txPackets=65256 rxPackets=100 txPacketError=0 rxPacketError=0 retransmission=1
+				Link metric(update time: 1682716149): rxRate=286 txRate=286 uplinkRcpi=144
+		Neighbor al mac: 02:78:02:22:44:68, Neighbor interface mac: 02:78:02:21:44:68
+			Link metric(update time: 1682632715): txPacketErrors=3812 txPackets=201735 macThroughPutCapacity=270 linkAvailability=47 phyRate=65535 rxPackets=66863 rxPacketErrors=264 rcpi=189
+		Neighbor al mac: 02:C0:02:22:44:66, Neighbor interface mac: 00:00:00:00:00:00
+			Link metric(update time: 0): txPacketErrors=0 txPackets=0 macThroughPutCapacity=0 linkAvailability=0 phyRate=0 rxPackets=0 rxPacketErrors=0 rcpi=0
+	<Interface: D8:21:DA:77:4D:1E (Wireless)> band: 5G(2) channel: 0 bandwidth: 0 tx_power:0 No need to config(2) bss_configured_num(0)
+	<Interface: D8:21:DA:77:4D:1C (Wireless)> band: 5G(2) channel: 0 bandwidth: 0 tx_power:0 No need to config(2) bss_configured_num(0)
+	<Interface: D8:21:DA:77:4D:1B (Wireless)> band: 2.4G(1) channel: 3 bandwidth: 2 tx_power:24 Configured(1) bss_configured_num(1)
+		Bss: D8:21:DA:77:4D:1B ssid: NSD3K-4466-5 auth_mode: (0x0000) encryption_mode: (0x0000) key:  mlo_enabled:0 map_role: Fronthaul
+	<Interface: D8:21:DA:77:4D:18 (Ethernet)> 
+	<Route: media_type: Wi-Fi mac: 02:78:02:21:44:68 ifname: rai3 update_time: 1682716124>
+	<Route: media_type: Eth mac: 00:00:00:00:00:00 ifname: lo update_time: 1682711067>
+
+
