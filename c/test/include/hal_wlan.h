@@ -39,6 +39,6 @@ typedef struct
 typedef struct
 {
     wlan_map_topology map_device[WLAN_MAX_MAP_NUM];
-}LAN_MAP_TOPOLOGY;
+}WLAN_MAP_TOPOLOGY;
 
 #endif//__HAL_WLAN_H__

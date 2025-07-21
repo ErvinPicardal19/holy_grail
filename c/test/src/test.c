@@ -14,7 +14,7 @@ int main(void)
     char line[1024] = {0};
     FILE *fp = fopen("of_output.txt", "r");
     int start_parse = 0;
-
+    WLAN_MAP_TOPOLOGY h;
     while(fgets(line, sizeof(line)-1, fp) != NULL)
     {
         if(strstr(line, "Agent") != NULL)
